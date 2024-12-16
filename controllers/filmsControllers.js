@@ -37,6 +37,7 @@ const show = (req, res) => {
         FROM movies
         LEFT JOIN reviews ON movies.id = reviews.movie_id
         WHERE movies.id = ?
+        ORDER BY reviews.id DESC
     `;
 
     connection.query(reviewsSql, [id], (err, results) => {
