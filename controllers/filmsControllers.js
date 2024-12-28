@@ -71,6 +71,7 @@ const addReview = (req, res) => {
     const { reviewer, review, vote } = req.body;
     const movieId = req.params.id;
 
+
     const insertReviewSql = `
         INSERT INTO reviews (movie_id, name, vote, text) 
         VALUES (?, ?, ?, ?)
@@ -80,6 +81,10 @@ const addReview = (req, res) => {
         if (err) {
             console.error("Errore nell'inserire la recensione:", err);
             return res.status(500).json({ error: 'Errore nell\'aggiungere la recensione' });
+        }
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Film non trovato. Non è stato possibile recuperare il film.' });
         }
 
         const reviewsSql = `
