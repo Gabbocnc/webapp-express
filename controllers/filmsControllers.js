@@ -22,84 +22,50 @@ const index = (req, res) => {
 const show = (req, res) => {
     const id = req.params.id;
 
-    const reviewsSql = `
+
+    const movieSql = `
         SELECT 
-            movies.id,
-            movies.title,
-            movies.director,
-            movies.genre,
-            movies.release_year,
-            movies.abstract,
-            movies.image,
-            reviews.name,
-            reviews.vote,
-            reviews.text
+            id, title, director, genre, release_year, abstract, image
         FROM movies
-        LEFT JOIN reviews ON movies.id = reviews.movie_id
-        WHERE movies.id = ?
-        ORDER BY reviews.id DESC
+        WHERE id = ?
     `;
 
-    connection.query(reviewsSql, [id], (err, results) => {
+    const reviewsSql = `
+        SELECT 
+            name, vote, text
+        FROM reviews
+        WHERE movie_id = ?
+        ORDER BY id DESC
+    `;
+
+
+    connection.query(movieSql, [id], (err, movieResults) => {
         if (err) {
-            return res.status(500).json({ error: 'Errore server' });
+            return res.status(500).json({ error: 'Errore server durante il recupero del film' });
         }
 
-        if (results.length === 0) {
+        if (movieResults.length === 0) {
             return res.status(404).json({ error: 'Film non trovato' });
         }
 
-        const film = {
-            id: results[0].movie_id,
-            title: results[0].title,
-            director: results[0].director,
-            genre: results[0].genre,
-            release_year: results[0].release_year,
-            abstract: results[0].abstract,
-            image: results[0].image,
-            reviews: results
-        };
 
-        if (req.method === "POST") {
-            const { name, vote, text } = req.body;
-
-            const insertReviewSql = `
-                INSERT INTO reviews (movie_id, name, vote, text) 
-                VALUES (?, ?, ?, ?)
-            `;
-
-            connection.query(insertReviewSql, [id, name, vote, text], (err) => {
-                if (err) {
-                    return res.status(500).json({ error: 'Errore nell\'aggiungere la recensione' });
-                }
+        const film = movieResults[0];
 
 
-                connection.query(reviewsSql, [id], (err, updatedResults) => {
-                    if (err) {
-                        return res.status(500).json({ error: 'Errore nel recupero delle recensioni aggiornate' });
-                    }
+        connection.query(reviewsSql, [id], (err, reviewsResults) => {
+            if (err) {
+                return res.status(500).json({ error: 'Errore server durante il recupero delle recensioni' });
+            }
 
-                    res.json({
-                        ...film,
-                        reviews: updatedResults
-                    });
-                });
+
+            res.json({
+                ...film,
+                reviews: reviewsResults
             });
-        } else {
-
-            connection.query(reviewsSql, [id], (err, updatedResults) => {
-                if (err) {
-                    return res.status(500).json({ error: 'Errore nel recupero del film' });
-                }
-
-                res.json({
-                    ...film,
-                    reviews: updatedResults
-                });
-            });
-        }
+        });
     });
 };
+
 
 const addReview = (req, res) => {
     const { reviewer, review, vote } = req.body;
